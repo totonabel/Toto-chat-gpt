@@ -100,7 +100,15 @@ export default function CreateTablePage() {
             </div>
           </div>
 
-          <SeatSelector maxPlayers={maxPlayers} occupiedSeats={[]} selectedSeat={leaderSeatNumber} onSelect={setLeaderSeatNumber} label="Elegí tu asiento como líder/jugador" />
+          <div className="field">
+            <label>Elegí tu asiento como líder/jugador</label>
+            <SeatSelector
+              maxPlayers={maxPlayers}
+              occupiedSeats={[]}
+              selectedSeat={leaderSeatNumber}
+              onSelect={setLeaderSeatNumber}
+              />
+          </div>
 
           <div className="form-pair">
             <div className="field">
