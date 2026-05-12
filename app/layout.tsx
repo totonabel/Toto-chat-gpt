@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Poker Wallet",
-  description: "Virtual chips for in-person poker games",
+  description: "Virtual poker chips for in-person poker games",
 };
 
 export default function RootLayout(props: any) {
