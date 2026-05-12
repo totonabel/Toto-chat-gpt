@@ -36,11 +36,11 @@ export const createTable = async (input: CreateTableInput): Promise<{ tableId: s
   const leader: FirebasePlayer = {
     uid: input.uid,
     name: input.playerName,
-    seatNumber: null,
+    seatNumber: input.leaderSeatNumber,
     stack: input.startingStack,
     currentBet: 0,
     totalCommittedThisHand: 0,
-    status: "waitingNextHand",
+    status: "active",
     isLeader: true,
     connected: true,
     joinedAt: now,
