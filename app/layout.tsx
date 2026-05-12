@@ -6,14 +6,10 @@ export const metadata: Metadata = {
   description: "Virtual chips for in-person poker games",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout(props: any) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>{props.children}</body>
     </html>
   );
 }
