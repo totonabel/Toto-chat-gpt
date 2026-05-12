@@ -19,6 +19,15 @@ type PlayerManagerProps = {
   players: PlayerWithId[];
 };
 
+const statusLabels: Record<PlayerWithId["status"], string> = {
+  active: "activo",
+  sittingOut: "ausente",
+  waitingNextHand: "esperando próxima mano",
+  folded: "retirado",
+  allIn: "All-in",
+  broke: "sin fichas",
+};
+
 export function PlayerManager({ tableId, leaderUid, table, players }: PlayerManagerProps) {
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -30,24 +39,24 @@ export function PlayerManager({ tableId, leaderUid, table, players }: PlayerMana
     try {
       await action();
     } catch (managerError) {
-      setError(managerError instanceof Error ? managerError.message : "Action failed.");
+      setError(managerError instanceof Error ? managerError.message : "No se pudo completar la acción.");
     } finally {
       setPending(null);
     }
   };
 
   const moveSeat = (player: PlayerWithId) => {
-    const value = window.prompt(`Move ${player.name} to seat number`, String(player.seatNumber ?? 1));
+    const value = window.prompt(`Mover a ${player.name} al asiento`, String(player.seatNumber ?? 1));
     if (!value) return;
-    void run(`move-${player.id}`, () => movePlayerSeatTx(tableId, leaderUid, player.id, Number(value)));
+    void run(`mover-${player.id}`, () => movePlayerSeatTx(tableId, leaderUid, player.id, Number(value)));
   };
 
   return (
     <section className="leader-card">
       <div className="leader-section-title">
         <div>
-          <p className="eyebrow">Players</p>
-          <h2>Manage players</h2>
+          <p className="eyebrow">Jugadores</p>
+          <h2>Gestionar jugadores</h2>
         </div>
         <span className="status-chip">{players.length}/{table.maxPlayers}</span>
       </div>
@@ -55,6 +64,12 @@ export function PlayerManager({ tableId, leaderUid, table, players }: PlayerMana
       <div className="leader-player-list">
         {players.map((player) => {
           const isCurrentTurn = player.seatNumber === table.currentTurnSeat;
+          const roles = [
+            player.seatNumber === table.dealerSeat ? "Dealer" : "",
+            player.seatNumber === table.smallBlindSeat ? "SB" : "",
+            player.seatNumber === table.bigBlindSeat ? "BB" : "",
+            isCurrentTurn ? "Turno" : "",
+          ].filter(Boolean);
           const classes = ["leader-player-card", player.status, !player.connected ? "disconnected" : "", isCurrentTurn ? "current" : ""].filter(Boolean).join(" ");
           return (
             <article key={player.id} className={classes}>
@@ -62,36 +77,24 @@ export function PlayerManager({ tableId, leaderUid, table, players }: PlayerMana
                 <div>
                   <strong>{player.name}</strong>
                   <p className="muted">
-                    Seat {player.seatNumber ?? "—"} · {player.status} {player.isLeader ? "· leader" : ""}
+                    Asiento {player.seatNumber ?? "—"} · {statusLabels[player.status]} {player.isLeader ? "· líder" : ""} {roles.length ? `· ${roles.join(" · ")}` : ""}
                   </p>
                 </div>
-                <span className={`connection-badge ${player.connected ? "online" : "offline"}`}>{player.connected ? "online" : "offline"}</span>
+                <span className={`connection-badge ${player.connected ? "online" : "offline"}`}>{player.connected ? "conectado" : "desconectado"}</span>
               </div>
               <div className="hand-meta-grid">
                 <span>Stack ${player.stack}</span>
-                <span>Bet ${player.currentBet}</span>
-                <span>Committed ${player.totalCommittedThisHand}</span>
-                <span>{isCurrentTurn ? "Current turn" : "Waiting"}</span>
+                <span>Apuesta ${player.currentBet}</span>
+                <span>Apostado ${player.totalCommittedThisHand}</span>
+                <span>{isCurrentTurn ? "Turno" : "Esperando"}</span>
               </div>
               <div className="leader-actions-grid compact">
-                <button className="secondary-button" disabled={Boolean(pending) || !table.allowReloads} onClick={() => run(`reload-${player.id}`, () => reloadPlayerTx(tableId, leaderUid, player.id), `Reload ${player.name}?`)}>
-                  Reload
-                </button>
-                <button className="secondary-button" disabled={Boolean(pending) || player.status === "sittingOut"} onClick={() => run(`out-${player.id}`, () => setPlayerSittingOutTx(tableId, leaderUid, player.id))}>
-                  Sitting out
-                </button>
-                <button className="secondary-button" disabled={Boolean(pending) || player.stack <= 0} onClick={() => run(`active-${player.id}`, () => reactivatePlayerTx(tableId, leaderUid, player.id))}>
-                  Reactivate
-                </button>
-                <button className="secondary-button" disabled={Boolean(pending)} onClick={() => moveSeat(player)}>
-                  Move seat
-                </button>
-                <button className="secondary-button" disabled={Boolean(pending) || player.status !== "waitingNextHand" || player.stack <= 0} onClick={() => run(`approve-${player.id}`, () => approveWaitingPlayerTx(tableId, leaderUid, player.id))}>
-                  Approve
-                </button>
-                <button className="danger-button" disabled={Boolean(pending) || player.isLeader} onClick={() => run(`remove-${player.id}`, () => softRemovePlayerTx(tableId, leaderUid, player.id), `Soft remove ${player.name}?`)}>
-                  Remove
-                </button>
+                <button className="secondary-button" disabled={Boolean(pending) || !table.allowReloads} onClick={() => run(`recargar-${player.id}`, () => reloadPlayerTx(tableId, leaderUid, player.id), `¿Recargar fichas a ${player.name}?`)}>Recargar</button>
+                <button className="secondary-button" disabled={Boolean(pending) || player.status === "sittingOut"} onClick={() => run(`fuera-${player.id}`, () => setPlayerSittingOutTx(tableId, leaderUid, player.id))}>Ausente</button>
+                <button className="secondary-button" disabled={Boolean(pending) || player.stack <= 0} onClick={() => run(`reactivar-${player.id}`, () => reactivatePlayerTx(tableId, leaderUid, player.id))}>Reactivar</button>
+                <button className="secondary-button" disabled={Boolean(pending)} onClick={() => moveSeat(player)}>Cambiar asiento</button>
+                <button className="secondary-button" disabled={Boolean(pending) || player.status !== "waitingNextHand" || player.stack <= 0} onClick={() => run(`aprobar-${player.id}`, () => approveWaitingPlayerTx(tableId, leaderUid, player.id))}>Aprobar</button>
+                <button className="danger-button" disabled={Boolean(pending) || player.isLeader} onClick={() => run(`quitar-${player.id}`, () => softRemovePlayerTx(tableId, leaderUid, player.id), `¿Eliminar a ${player.name}?`)}>Eliminar</button>
               </div>
             </article>
           );
