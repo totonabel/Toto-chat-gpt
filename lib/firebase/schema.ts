@@ -91,4 +91,5 @@ export type CreateTableInput = {
   allowReloads: boolean;
   reloadAmount: number;
   chipValues: number[];
+  leaderSeatNumber: number;
 };
