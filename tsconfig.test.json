@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "outDir": ".test-build",
+    "rootDir": ".",
+    "ignoreDeprecations": "6.0",
+    "jsx": "react-jsx"
+  },
+  "include": [
+    "lib/engine/**/*.ts",
+    "tests/**/*.ts",
+    "lib/firebase/**/*.ts",
+    "lib/hooks/**/*.ts",
+    "tests/**/*.d.ts",
+    "app/**/*.tsx",
+    "components/**/*.tsx"
+  ]
+}
