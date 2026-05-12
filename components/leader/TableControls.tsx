@@ -10,6 +10,14 @@ type TableControlsProps = {
   table: FirebaseTable & { id: string };
 };
 
+const roundLabels: Record<FirebaseTable["currentRound"], string> = {
+  preflop: "Preflop",
+  flop: "Flop",
+  turn: "Turn",
+  river: "River",
+  showdown: "Showdown",
+};
+
 export function TableControls({ tableId, leaderUid, table }: TableControlsProps) {
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +29,7 @@ export function TableControls({ tableId, leaderUid, table }: TableControlsProps)
     try {
       await action();
     } catch (controlError) {
-      setError(controlError instanceof Error ? controlError.message : "Action failed.");
+      setError(controlError instanceof Error ? controlError.message : "No se pudo completar la acción.");
     } finally {
       setPending(null);
     }
@@ -33,33 +41,25 @@ export function TableControls({ tableId, leaderUid, table }: TableControlsProps)
     <section className="leader-card">
       <div className="leader-section-title">
         <div>
-          <p className="eyebrow">Hand controls</p>
-          <h2>Manage hand</h2>
+          <p className="eyebrow">Controles de mano</p>
+          <h2>Gestionar mano</h2>
         </div>
-        <span className="status-chip">{table.currentRound}</span>
+        <span className="status-chip">{roundLabels[table.currentRound]}</span>
       </div>
       <div className="hand-meta-grid">
         <span>Dealer: {table.dealerSeat ?? "—"}</span>
-        <span>SB: {table.smallBlindSeat ?? "—"}</span>
-        <span>BB: {table.bigBlindSeat ?? "—"}</span>
-        <span>Turn: {table.currentTurnSeat ?? "—"}</span>
+        <span>Ciega chica: {table.smallBlindSeat ?? "—"}</span>
+        <span>Ciega grande: {table.bigBlindSeat ?? "—"}</span>
+        <span>Turno: {table.currentTurnSeat ?? "—"}</span>
       </div>
       {error ? <div className="error-card">{error}</div> : null}
       <div className="leader-actions-grid">
-        <button className="primary-button" disabled={Boolean(pending) || inHand} onClick={() => run("start", () => startHandTx(tableId, leaderUid))}>
-          Start hand
-        </button>
-        <button className="secondary-button" disabled={Boolean(pending) || !inHand} onClick={() => run("round", () => nextBettingRoundTx(tableId, leaderUid))}>
-          Next betting round
-        </button>
-        <button className="danger-button" disabled={Boolean(pending) || !inHand} onClick={() => run("end", () => endHandTx(tableId, leaderUid), "End this hand and create pots?")}>
-          End hand
-        </button>
-        <button className="secondary-button" disabled={Boolean(pending) || table.status === "inHand"} onClick={() => run("next", () => startNextHandTx(tableId, leaderUid), "Reset players and prepare the next hand?")}>
-          Start next hand
-        </button>
+        <button className="primary-button" disabled={Boolean(pending) || inHand} onClick={() => run("iniciar", () => startHandTx(tableId, leaderUid))}>Iniciar mano</button>
+        <button className="secondary-button" disabled={Boolean(pending) || !inHand} onClick={() => run("ronda", () => nextBettingRoundTx(tableId, leaderUid))}>Siguiente ronda</button>
+        <button className="danger-button" disabled={Boolean(pending) || !inHand} onClick={() => run("terminar", () => endHandTx(tableId, leaderUid), "¿Terminar esta mano y crear los pozos?")}>Terminar mano</button>
+        <button className="secondary-button" disabled={Boolean(pending) || table.status === "inHand"} onClick={() => run("siguiente", () => startNextHandTx(tableId, leaderUid), "¿Iniciar la siguiente mano?")}>Iniciar siguiente mano</button>
       </div>
-      {pending ? <p className="muted">Sending {pending}...</p> : null}
+      {pending ? <p className="muted">Enviando {pending}...</p> : null}
     </section>
   );
 }
