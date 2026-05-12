@@ -2,7 +2,7 @@
 
 import { PokerChip } from "./PokerChip";
 
-const defaultValues = [10, 25, 50, 100, 250, 500, 1000];
+const defaultValues = [250, 500, 1000, 2000];
 
 type ChipSelectorProps = {
   values?: number[];
@@ -12,7 +12,7 @@ type ChipSelectorProps = {
 
 export function ChipSelector({ values = defaultValues, onAdd, disabled = false }: ChipSelectorProps) {
   return (
-    <section className="chip-panel" aria-label="Raise chips">
+    <section className="chip-panel" aria-label="Fichas para subir">
       <div className="chip-row">
         {values.map((value) => (
           <PokerChip key={value} value={value} onClick={onAdd} disabled={disabled} />
