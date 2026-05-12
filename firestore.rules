@@ -1,0 +1,149 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function tablePath(tableId) {
+      return /databases/$(database)/documents/tables/$(tableId);
+    }
+
+    function playerPath(tableId, playerId) {
+      return /databases/$(database)/documents/tables/$(tableId)/players/$(playerId);
+    }
+
+    function isMember(tableId) {
+      return signedIn() && exists(playerPath(tableId, request.auth.uid));
+    }
+
+    function isLeader(tableId) {
+      return isMember(tableId) && get(playerPath(tableId, request.auth.uid)).data.isLeader == true;
+    }
+
+    function isSelf(playerId) {
+      return signedIn() && request.auth.uid == playerId;
+    }
+
+
+    function validLeaderPlayerCreate(tableId, playerId) {
+      return isSelf(playerId)
+        && exists(tablePath(tableId))
+        && get(tablePath(tableId)).data.createdBy == request.auth.uid
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.isLeader == true
+        && request.resource.data.stack >= 0
+        && request.resource.data.seatNumber == null;
+    }
+
+    function validPlayerCreate(playerId) {
+      return isSelf(playerId)
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.isLeader == false
+        && request.resource.data.stack == 0
+        && request.resource.data.seatNumber == null
+        && request.resource.data.status == 'waitingNextHand';
+    }
+
+    function selfConnectionOnly() {
+      return request.resource.data.diff(resource.data).changedKeys().hasOnly(['name', 'connected', 'lastSeenAt']);
+    }
+
+    function selfSeatClaimOnly() {
+      return request.resource.data.diff(resource.data).changedKeys().hasOnly(['seatNumber', 'stack', 'status', 'lastSeenAt'])
+        && request.resource.data.stack >= 0
+        && request.resource.data.status in ['active', 'waitingNextHand'];
+    }
+
+    function playerActionSelfOnly() {
+      return request.resource.data.diff(resource.data).changedKeys().hasOnly(['stack', 'currentBet', 'totalCommittedThisHand', 'status', 'lastSeenAt'])
+        && request.resource.data.stack >= 0
+        && request.resource.data.currentBet >= 0
+        && request.resource.data.totalCommittedThisHand >= 0
+        && request.resource.data.status in ['active', 'folded', 'allIn', 'broke'];
+    }
+
+    function leaderPlayerUpdateOnly() {
+      return request.resource.data.stack >= 0
+        && request.resource.data.currentBet >= 0
+        && request.resource.data.totalCommittedThisHand >= 0
+        && request.resource.data.status in ['active', 'sittingOut', 'waitingNextHand', 'folded', 'allIn', 'broke'];
+    }
+
+    function tableCreateIsValid() {
+      return signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.status == 'waiting'
+        && request.resource.data.smallBlind > 0
+        && request.resource.data.bigBlind >= request.resource.data.smallBlind
+        && request.resource.data.startingStack > 0
+        && request.resource.data.maxPlayers >= 2
+        && request.resource.data.handNumber == 0
+        && request.resource.data.potTotal == 0;
+    }
+
+    function leaderTableUpdateOnly() {
+      return request.resource.data.diff(resource.data).changedKeys().hasOnly([
+          'status', 'handNumber', 'dealerSeat', 'smallBlindSeat', 'bigBlindSeat',
+          'currentTurnSeat', 'currentRound', 'highestBet', 'potTotal', 'updatedAt'
+        ])
+        && request.resource.data.highestBet >= 0
+        && request.resource.data.potTotal >= 0
+        && request.resource.data.status in ['waiting', 'inHand', 'showdown', 'finished']
+        && request.resource.data.currentRound in ['preflop', 'flop', 'turn', 'river', 'showdown'];
+    }
+
+    function playerTableActionUpdateOnly() {
+      return request.resource.data.diff(resource.data).changedKeys().hasOnly(['highestBet', 'currentTurnSeat', 'potTotal', 'updatedAt'])
+        && request.resource.data.highestBet >= 0
+        && request.resource.data.potTotal >= 0;
+    }
+
+    match /tables/{tableId} {
+      allow get, list: if signedIn();
+      allow create: if tableCreateIsValid();
+      allow update: if isLeader(tableId) && leaderTableUpdateOnly()
+        || isMember(tableId) && playerTableActionUpdateOnly();
+      allow delete: if false;
+
+      match /players/{playerId} {
+        allow get, list: if isMember(tableId);
+        allow create: if validPlayerCreate(playerId)
+          || validLeaderPlayerCreate(tableId, playerId)
+          || isLeader(tableId) && request.resource.data.uid == playerId;
+        allow update: if isSelf(playerId) && (selfConnectionOnly() || selfSeatClaimOnly() || playerActionSelfOnly())
+          || isLeader(tableId) && leaderPlayerUpdateOnly();
+        allow delete: if false;
+      }
+
+      match /actions/{actionId} {
+        allow get, list: if isMember(tableId);
+        allow create: if isMember(tableId)
+          && request.resource.data.playerId is string
+          && request.resource.data.type is string
+          && request.resource.data.handNumber is int
+          && request.resource.data.metadata is map;
+        allow update, delete: if false;
+      }
+
+      match /pots/{potId} {
+        allow get, list: if isMember(tableId);
+        allow create, update: if isLeader(tableId)
+          && request.resource.data.amount >= 0
+          && request.resource.data.eligiblePlayerIds is list
+          && request.resource.data.winnerIds is list
+          && request.resource.data.handNumber is int
+          && request.resource.data.type in ['main', 'side'];
+        allow delete: if false;
+      }
+
+      match /seats/{seatNumber} {
+        allow get, list: if isMember(tableId);
+        allow create, update: if isMember(tableId)
+          && request.resource.data.playerId == request.auth.uid
+          || isLeader(tableId);
+        allow delete: if isLeader(tableId);
+      }
+    }
+  }
+}
