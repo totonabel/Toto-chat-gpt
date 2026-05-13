@@ -41,7 +41,7 @@ export default function LeaderPage() {
   }, [online, tableId, user]);
 
   useEffect(() => {
-    pushToast(online ? "Reconnected" : "Connection lost", online ? "success" : "error");
+    pushToast(online ? "Reconectado" : "Conexión perdida", online ? "success" : "error");
   }, [online, pushToast]);
 
   useEffect(() => {
@@ -51,15 +51,15 @@ export default function LeaderPage() {
   }, [authLoading, myPlayer, myPlayerLoading, router, tableId, user]);
 
   if (authLoading || tableLoading || playersLoading || myPlayerLoading) {
-    return <main className="loading-state">Loading leader dashboard...</main>;
+    return <main className="loading-state">Cargando panel del líder...</main>;
   }
 
   if (authError || !table || !user || !myPlayer) {
-    return <FirebaseErrorState title="Could not load leader dashboard" message={authError?.message ?? tableError?.message ?? "Check your Firebase configuration or network connection."} />;
+    return <FirebaseErrorState title="No se pudo cargar el panel del líder" message={authError?.message ?? tableError?.message ?? "Revisá la configuración de Firebase o la conexión."} />;
   }
 
   if (!myPlayer.isLeader) {
-    return <main className="loading-state">Redirecting to player view...</main>;
+    return <main className="loading-state">Redirigiendo a la vista de jugador...</main>;
   }
 
   return (
