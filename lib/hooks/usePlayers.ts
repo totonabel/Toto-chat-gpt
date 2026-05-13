@@ -1,11 +1,19 @@
 "use client";
 
-import { onSnapshot, orderBy, query } from "firebase/firestore";
+import { onSnapshot } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { playersRef } from "../firebase/refs";
 import type { FirebasePlayer } from "../firebase/schema";
 
 export type PlayerWithId = FirebasePlayer & { id: string };
+
+const sortPlayers = (players: PlayerWithId[]): PlayerWithId[] =>
+  [...players].sort((a, b) => {
+    if (a.seatNumber === null && b.seatNumber === null) return a.name.localeCompare(b.name);
+    if (a.seatNumber === null) return 1;
+    if (b.seatNumber === null) return -1;
+    return a.seatNumber - b.seatNumber;
+  });
 
 export const usePlayers = (tableId: string | null) => {
   const [players, setPlayers] = useState<PlayerWithId[]>([]);
@@ -22,9 +30,9 @@ export const usePlayers = (tableId: string | null) => {
 
     setLoading(true);
     return onSnapshot(
-      query(playersRef(tableId), orderBy("seatNumber"), orderBy("joinedAt")),
+      playersRef(tableId),
       (snapshot) => {
-        setPlayers(snapshot.docs.map((doc) => ({ id: doc.id, ...(doc.data() as FirebasePlayer) })));
+        setPlayers(sortPlayers(snapshot.docs.map((doc) => ({ id: doc.id, ...(doc.data() as FirebasePlayer) }))));
         setError(null);
         setLoading(false);
       },
