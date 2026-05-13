@@ -7,15 +7,16 @@ type PokerTableProps = {
   table: FirebaseTable & { id: string };
   players: PlayerWithId[];
   potTotal: number;
+  compact?: boolean;
 };
 
-export function PokerTable({ table, players, potTotal }: PokerTableProps) {
+export function PokerTable({ table, players, potTotal, compact = false }: PokerTableProps) {
   const seatedPlayers = players
     .filter((player) => player.seatNumber !== null)
     .sort((a, b) => (a.seatNumber ?? 0) - (b.seatNumber ?? 0));
 
   return (
-    <section className="poker-table" aria-label="Poker table">
+    <section className={`poker-table ${compact ? "compact" : ""}`} aria-label="Mesa de póker">
       <div className="felt-table">
         <PotDisplay amount={potTotal} />
       </div>
