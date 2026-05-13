@@ -335,6 +335,29 @@ export const startNextHandTx = async (tableId: string, leaderUid: string): Promi
   });
 };
 
+export const finishTableTx = async (tableId: string, leaderUid: string): Promise<void> => {
+  const playerIds = await listPlayerIds(tableId);
+  await runTransaction(getFirebaseDb(), async (tx) => {
+    const tableSnap = await tx.get(tableRef(tableId));
+    if (!tableSnap.exists()) throw new Error("Table not found.");
+    const table = tableSnap.data() as FirebaseTable;
+    const players = await readPlayersInTx(tx, tableId, playerIds);
+    const leader = players.find(({ id }) => id === leaderUid)?.data;
+    assertLeader(leader, leaderUid);
+    if (table.status === "finished") throw new Error("Table is already finished.");
+
+    tx.update(tableRef(tableId), {
+      status: "finished",
+      currentTurnSeat: null,
+      currentRound: "showdown",
+      highestBet: 0,
+      potTotal: 0,
+      updatedAt: serverTimestamp(),
+    });
+    writeActionInTx(tx, tableId, table, leaderUid, leader.name, "finishTable", null);
+  });
+};
+
 const bettingRoundOrder = ["preflop", "flop", "turn", "river", "showdown"] as const;
 
 const nextRound = (round: FirebaseTable["currentRound"]): FirebaseTable["currentRound"] => {

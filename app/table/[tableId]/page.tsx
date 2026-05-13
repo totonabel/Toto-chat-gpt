@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { FirebaseErrorState } from "../../../components/feedback/FirebaseErrorState";
+import { PostGameView } from "../../../components/table/PostGameView";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "../../../lib/hooks/useAuth";
 import { useMyPlayer } from "../../../lib/hooks/useMyPlayer";
@@ -20,7 +21,7 @@ export default function TableRoleRouterPage() {
   }, [authLoading, player, playerLoading, router, table, tableId, tableLoading, user]);
 
   if (table?.status === "finished") {
-    return <main className="loading-state">This table is finished.</main>;
+    return <PostGameView table={table} />;
   }
 
   if (authError || (!tableLoading && !table)) {

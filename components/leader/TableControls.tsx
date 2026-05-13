@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { endHandTx, nextBettingRoundTx, startHandTx, startNextHandTx } from "../../lib/firebase/transactions";
+import { endHandTx, finishTableTx, nextBettingRoundTx, startHandTx, startNextHandTx } from "../../lib/firebase/transactions";
 import type { FirebaseTable } from "../../lib/firebase/schema";
 
 type TableControlsProps = {
@@ -58,6 +58,7 @@ export function TableControls({ tableId, leaderUid, table }: TableControlsProps)
         <button className="secondary-button" disabled={Boolean(pending) || !inHand} onClick={() => run("ronda", () => nextBettingRoundTx(tableId, leaderUid))}>Siguiente ronda</button>
         <button className="danger-button" disabled={Boolean(pending) || !inHand} onClick={() => run("terminar", () => endHandTx(tableId, leaderUid), "¿Terminar esta mano y crear los pozos?")}>Terminar mano</button>
         <button className="secondary-button" disabled={Boolean(pending) || table.status === "inHand"} onClick={() => run("siguiente", () => startNextHandTx(tableId, leaderUid), "¿Iniciar la siguiente mano?")}>Iniciar siguiente mano</button>
+        <button className="danger-button" disabled={Boolean(pending) || table.status === "finished"} onClick={() => run("terminar-partida", () => finishTableTx(tableId, leaderUid), "¿Finalizar la partida?")}>Finalizar partida</button>
       </div>
       {pending ? <p className="muted">Enviando {pending}...</p> : null}
     </section>

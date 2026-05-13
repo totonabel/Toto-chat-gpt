@@ -53,6 +53,7 @@ export type FirebaseActionType =
   | "startNextHand"
   | "nextRound"
   | "endHand"
+  | "finishTable"
   | "sittingOut"
   | "reactivate"
   | "softRemove"

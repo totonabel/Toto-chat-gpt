@@ -221,6 +221,20 @@ button:disabled {
   gap: 10px;
 }
 
+.player-header .leave-table-button {
+  width: 100%;
+}
+
+.leader-hero-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.leader-hero-actions .leave-table-button {
+  min-width: 100%;
+}
+
 .stat-card {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 18px;

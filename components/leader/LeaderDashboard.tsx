@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { FirebaseTable } from "../../lib/firebase/schema";
 import type { PlayerWithId } from "../../lib/hooks/usePlayers";
 import type { FirebasePot } from "../../lib/firebase/schema";
@@ -8,6 +9,7 @@ import { PlayerGameView } from "../table/PlayerGameView";
 import { PlayerManager } from "./PlayerManager";
 import { PotResolver } from "./PotResolver";
 import { TableControls } from "./TableControls";
+import { clearLocalSession } from "../../lib/session/localSession";
 
 type LeaderDashboardProps = {
   tableId: string;
@@ -37,6 +39,7 @@ const roundLabels: Record<FirebaseTable["currentRound"], string> = {
 type LeaderMode = "play" | "admin";
 
 export function LeaderDashboard({ tableId, leaderUid, table, players, pots }: LeaderDashboardProps) {
+  const router = useRouter();
   const [mode, setMode] = useState<LeaderMode>("play");
   const [preparedRaise, setPreparedRaise] = useState(0);
   const connectedPlayers = players.filter((player) => player.connected).length;
@@ -103,6 +106,11 @@ export function LeaderDashboard({ tableId, leaderUid, table, players, pots }: Le
     );
   }
 
+  const leaveTable = () => {
+    clearLocalSession();
+    router.push("/");
+  };
+
   return (
     <main className="leader-page admin-mode">
       <nav className="leader-mode-tabs" aria-label="Modo del líder">
@@ -117,6 +125,9 @@ export function LeaderDashboard({ tableId, leaderUid, table, players, pots }: Le
         <div className="table-code-card">
           <span>Código de mesa</span>
           <strong>{table.code}</strong>
+        </div>
+        <div className="leader-hero-actions">
+          <button type="button" className="secondary-button leave-table-button" onClick={leaveTable}>Salir de la mesa</button>
         </div>
         <div className="leader-status-row">
           <span className="status-chip">{statusLabels[table.status]}</span>

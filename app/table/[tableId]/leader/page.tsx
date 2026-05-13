@@ -7,6 +7,7 @@ import { ConnectionBanner } from "../../../../components/feedback/ConnectionBann
 import { ToastViewport } from "../../../../components/feedback/ToastViewport";
 import { DebugPanel } from "../../../../components/debug/DebugPanel";
 import { LeaderDashboard } from "../../../../components/leader/LeaderDashboard";
+import { PostGameView } from "../../../../components/table/PostGameView";
 import { updatePlayerConnection } from "../../../../lib/firebase/player";
 import { useAuth } from "../../../../lib/hooks/useAuth";
 import { useMyPlayer } from "../../../../lib/hooks/useMyPlayer";
@@ -16,6 +17,7 @@ import { useTable } from "../../../../lib/hooks/useTable";
 import { useLocalSession } from "../../../../lib/hooks/useLocalSession";
 import { useOnlineStatus } from "../../../../lib/hooks/useOnlineStatus";
 import { useToasts } from "../../../../lib/hooks/useToasts";
+import { clearLocalSession } from "../../../../lib/session/localSession";
 
 export default function LeaderPage() {
   const { tableId } = useParams<{ tableId: string }>();
@@ -50,6 +52,17 @@ export default function LeaderPage() {
     }
   }, [authLoading, myPlayer, myPlayerLoading, router, tableId, user]);
 
+  const leaveTable = async () => {
+    if (!user) return;
+    try {
+      await updatePlayerConnection(tableId, user.uid, false);
+    } catch {
+      // ignore failures when leaving the table
+    }
+    clearLocalSession();
+    router.push("/");
+  };
+
   if (authLoading || tableLoading || playersLoading || myPlayerLoading) {
     return <main className="loading-state">Cargando panel del líder...</main>;
   }
@@ -60,6 +73,15 @@ export default function LeaderPage() {
 
   if (!myPlayer.isLeader) {
     return <main className="loading-state">Redirigiendo a la vista de jugador...</main>;
+  }
+
+  if (table.status === "finished") {
+    return (
+      <>
+        <ConnectionBanner online={online} snapshotError={tableError} />
+        <PostGameView table={table} />
+      </>
+    );
   }
 
   return (

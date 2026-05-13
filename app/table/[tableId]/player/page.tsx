@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { FirebaseErrorState } from "../../../../components/feedback/FirebaseErrorState";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { ConnectionBanner } from "../../../../components/feedback/ConnectionBanner";
 import { ToastViewport } from "../../../../components/feedback/ToastViewport";
 import { DebugPanel } from "../../../../components/debug/DebugPanel";
@@ -10,6 +10,7 @@ import { ActionBar } from "../../../../components/actions/ActionBar";
 import { ChipSelector } from "../../../../components/chips/ChipSelector";
 import { PreparedRaise } from "../../../../components/chips/PreparedRaise";
 import { PokerTable } from "../../../../components/table/PokerTable";
+import { PostGameView } from "../../../../components/table/PostGameView";
 import { updatePlayerConnection } from "../../../../lib/firebase/player";
 import { useAuth } from "../../../../lib/hooks/useAuth";
 import { useMyPlayer } from "../../../../lib/hooks/useMyPlayer";
@@ -19,6 +20,7 @@ import { useTable } from "../../../../lib/hooks/useTable";
 import { useLocalSession } from "../../../../lib/hooks/useLocalSession";
 import { useOnlineStatus } from "../../../../lib/hooks/useOnlineStatus";
 import { useToasts } from "../../../../lib/hooks/useToasts";
+import { clearLocalSession } from "../../../../lib/session/localSession";
 
 const formatMoney = (amount: number) => `$${amount}`;
 
@@ -36,6 +38,7 @@ export default function PlayerTablePage() {
   const online = useOnlineStatus();
   const { persistSession } = useLocalSession();
   const { toasts, pushToast, dismissToast } = useToasts();
+  const router = useRouter();
 
   const potTotal = useMemo(() => {
     const potsTotal = pots.reduce((total, pot) => total + pot.amount, 0);
@@ -108,6 +111,21 @@ export default function PlayerTablePage() {
     return <FirebaseErrorState title="Could not load table" message={authError?.message ?? tableError?.message ?? "Check your Firebase configuration or network connection."} />;
   }
 
+  if (table.status === "finished") {
+    return <PostGameView table={table} />;
+  }
+
+  const leaveTable = async () => {
+    if (!user) return;
+    try {
+      await updatePlayerConnection(tableId, user.uid, false);
+    } catch {
+      // ignore network failures when leaving the table
+    }
+    clearLocalSession();
+    router.push("/");
+  };
+
   return (
     <main className={`player-page ${isMyTurn ? "my-turn" : ""}`}>
       <ConnectionBanner online={online} snapshotError={tableError} />
@@ -127,6 +145,9 @@ export default function PlayerTablePage() {
         <div className="stat-card">
           <span className="muted">Highest bet</span>
           <strong>{formatMoney(table.highestBet)}</strong>
+        </div>
+        <div>
+          <button type="button" className="secondary-button leave-table-button" onClick={leaveTable}>Salir de la mesa</button>
         </div>
         <div className="status-pill">{statusText}</div>
       </header>
