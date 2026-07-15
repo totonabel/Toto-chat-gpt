@@ -18,12 +18,12 @@ type PlayerDoc = { id: string; ref: DocumentReference; data: FirebasePlayer };
 type PotDoc = { id: string; ref: DocumentReference; data: FirebasePot };
 
 const assertNonNegative = (value: number, label: string): void => {
-  if (!Number.isFinite(value) || value < 0) throw new Error(`${label} cannot be negative.`);
+  if (!Number.isFinite(value) || value < 0) throw new Error(`${label} no puede ser negativo.`);
 };
 
 function assertLeader(player: FirebasePlayer | undefined, uid: string): asserts player is FirebasePlayer {
-  if (!player || player.uid !== uid || !player.isLeader) throw new Error("Only the table leader can perform this action.");
-  if (!player.connected) throw new Error("Leader is disconnected.");
+  if (!player || player.uid !== uid || !player.isLeader) throw new Error("Solo el líder de la mesa puede realizar esta acción.");
+  if (!player.connected) throw new Error("El líder está desconectado.");
 }
 
 const enginePlayerFromDoc = ({ id, data }: PlayerDoc): Player => ({
@@ -147,17 +147,17 @@ export const createPotsForHand = async (tableId: string, handNumber: number, pot
 export const sitAtSeatTx = async (tableId: string, uid: string, seatNumber: number): Promise<void> => {
   await runTransaction(getFirebaseDb(), async (tx) => {
     const tableSnap = await tx.get(tableRef(tableId));
-    if (!tableSnap.exists()) throw new Error("Table not found.");
+    if (!tableSnap.exists()) throw new Error("Mesa no encontrada.");
     const table = tableSnap.data() as FirebaseTable;
     const playerSnap = await tx.get(playerRef(tableId, uid));
-    if (!playerSnap.exists()) throw new Error("Player not found.");
+    if (!playerSnap.exists()) throw new Error("Jugador no encontrado.");
     const player = playerSnap.data() as FirebasePlayer;
     const seatSnap = await tx.get(seatLockRef(tableId, seatNumber));
 
-    if (seatNumber < 1 || seatNumber > table.maxPlayers) throw new Error("Seat is outside table capacity.");
+    if (seatNumber < 1 || seatNumber > table.maxPlayers) throw new Error("El asiento está fuera de la capacidad de la mesa.");
     const seatData = seatSnap.exists() ? (seatSnap.data() as { playerId?: string }) : null;
-    if (seatData && seatData.playerId !== uid) throw new Error("Seat is already occupied.");
-    if (player.seatNumber !== null && player.seatNumber !== seatNumber) throw new Error("Player is already seated.");
+    if (seatData && seatData.playerId !== uid) throw new Error("El asiento ya está ocupado.");
+    if (player.seatNumber !== null && player.seatNumber !== seatNumber) throw new Error("El jugador ya está sentado.");
 
     tx.set(seatLockRef(tableId, seatNumber), { playerId: uid, updatedAt: serverTimestamp() });
     tx.update(playerRef(tableId, uid), {
@@ -174,21 +174,21 @@ export const reloadPlayerTx = async (tableId: string, leaderUid: string, playerI
   const playerIds = await listPlayerIds(tableId);
   await runTransaction(getFirebaseDb(), async (tx) => {
     const tableSnap = await tx.get(tableRef(tableId));
-    if (!tableSnap.exists()) throw new Error("Table not found.");
+    if (!tableSnap.exists()) throw new Error("Mesa no encontrada.");
     const table = tableSnap.data() as FirebaseTable;
     const players = await readPlayersInTx(tx, tableId, playerIds);
     const leader = players.find(({ id }) => id === leaderUid)?.data;
     const targetDoc = players.find(({ id }) => id === playerId);
 
     assertLeader(leader, leaderUid);
-    if (!table.allowReloads) throw new Error("Reloads are disabled for this table.");
-    if (!targetDoc) throw new Error("Player not found.");
-    if (table.status === "inHand" && targetDoc.data.status !== "broke") throw new Error("Only broke players can be reloaded during an active hand.");
+    if (!table.allowReloads) throw new Error("Las recargas están deshabilitadas para esta mesa.");
+    if (!targetDoc) throw new Error("Jugador no encontrado.");
+    if (table.status === "inHand" && targetDoc.data.status !== "broke") throw new Error("Solo los jugadores sin fichas pueden recargar durante una mano activa.");
 
     const engineTable = engineTableFromDocs(tableId, table, players);
     const reloaded = rebuyPlayer(engineTable, playerId, table.reloadAmount);
     const updated = reloaded.players.find((player) => player.id === playerId);
-    if (!updated) throw new Error("Player not seated.");
+    if (!updated) throw new Error("El jugador no está sentado.");
     tx.update(targetDoc.ref, {
       stack: updated.stack,
       status: table.status === "inHand" ? "waitingNextHand" : "active",
@@ -202,12 +202,12 @@ export const startHandTx = async (tableId: string, leaderUid: string): Promise<v
   const playerIds = await listPlayerIds(tableId);
   await runTransaction(getFirebaseDb(), async (tx) => {
     const tableSnap = await tx.get(tableRef(tableId));
-    if (!tableSnap.exists()) throw new Error("Table not found.");
+    if (!tableSnap.exists()) throw new Error("Mesa no encontrada.");
     const table = tableSnap.data() as FirebaseTable;
     const players = await readPlayersInTx(tx, tableId, playerIds);
     const leader = players.find(({ id }) => id === leaderUid)?.data;
     assertLeader(leader, leaderUid);
-    if (table.status === "inHand") throw new Error("A hand is already in progress.");
+    if (table.status === "inHand") throw new Error("Ya hay una mano en curso.");
 
     const nextHand = startHand(engineTableFromDocs(tableId, table, players));
     const nextPlayers = nextHand.players;
@@ -232,21 +232,21 @@ export const startHandTx = async (tableId: string, leaderUid: string): Promise<v
 };
 
 export const playerActionTx = async (tableId: string, playerId: string, action: Action): Promise<void> => {
-  if (action.playerId !== playerId) throw new Error("Action player does not match the acting player.");
+  if (action.playerId !== playerId) throw new Error("El jugador de la acción no coincide con el jugador que actúa.");
   const playerIds = await listPlayerIds(tableId);
   await runTransaction(getFirebaseDb(), async (tx) => {
     const tableSnap = await tx.get(tableRef(tableId));
-    if (!tableSnap.exists()) throw new Error("Table not found.");
+    if (!tableSnap.exists()) throw new Error("Mesa no encontrada.");
     const table = tableSnap.data() as FirebaseTable;
-    if (table.status !== "inHand") throw new Error("No hand is in progress.");
+    if (table.status !== "inHand") throw new Error("No hay ninguna mano en curso.");
 
     const players = await readPlayersInTx(tx, tableId, playerIds);
     const actingDoc = players.find(({ id }) => id === playerId);
-    if (!actingDoc) throw new Error("Player not found.");
-    if (actingDoc.data.seatNumber !== table.currentTurnSeat) throw new Error("It is not this player's turn.");
-    if (actingDoc.data.status === "folded") throw new Error("Folded players cannot act.");
-    if (actingDoc.data.status === "broke") throw new Error("Broke players cannot act.");
-    if (actingDoc.data.status === "allIn") throw new Error("All-in players cannot act again.");
+    if (!actingDoc) throw new Error("Jugador no encontrado.");
+    if (actingDoc.data.seatNumber !== table.currentTurnSeat) throw new Error("No es el turno de este jugador.");
+    if (actingDoc.data.status === "folded") throw new Error("Los jugadores retirados no pueden actuar.");
+    if (actingDoc.data.status === "broke") throw new Error("Los jugadores sin fichas no pueden actuar.");
+    if (actingDoc.data.status === "allIn") throw new Error("Los jugadores all-in no pueden volver a actuar.");
 
     const nextTable = applyAction(engineTableFromDocs(tableId, table, players), action);
     updatePlayersFromEngine(tx, players, nextTable.players);
@@ -272,18 +272,18 @@ export const resolvePotsTx = async (tableId: string, leaderUid: string, winnersB
   const potIds = await listPotIds(tableId);
   await runTransaction(getFirebaseDb(), async (tx) => {
     const tableSnap = await tx.get(tableRef(tableId));
-    if (!tableSnap.exists()) throw new Error("Table not found.");
+    if (!tableSnap.exists()) throw new Error("Mesa no encontrada.");
     const table = tableSnap.data() as FirebaseTable;
     const players = await readPlayersInTx(tx, tableId, playerIds);
     const pots = await readPotsInTx(tx, tableId, potIds);
     const currentHandPots = pots.filter((pot) => pot.data.handNumber === table.handNumber);
     const leader = players.find(({ id }) => id === leaderUid)?.data;
     assertLeader(leader, leaderUid);
-    if (table.status !== "showdown") throw new Error("Pots can only be resolved at showdown.");
-    if (currentHandPots.length === 0) throw new Error("There are no pots to resolve for this hand.");
+    if (table.status !== "showdown") throw new Error("Los pozos solo se pueden repartir en el showdown.");
+    if (currentHandPots.length === 0) throw new Error("No hay pozos para repartir en esta mano.");
     for (const pot of currentHandPots) {
       assertNonNegative(pot.data.amount, "Pot");
-      if (pot.data.distributed) throw new Error("Pot has already been distributed.");
+      if (pot.data.distributed) throw new Error("El pozo ya fue repartido.");
     }
 
     const resolved = distributePots(engineTableFromDocs(tableId, table, players, currentHandPots), winnersByPotId);
@@ -309,7 +309,7 @@ export const startNextHandTx = async (tableId: string, leaderUid: string): Promi
   const playerIds = await listPlayerIds(tableId);
   await runTransaction(getFirebaseDb(), async (tx) => {
     const tableSnap = await tx.get(tableRef(tableId));
-    if (!tableSnap.exists()) throw new Error("Table not found.");
+    if (!tableSnap.exists()) throw new Error("Mesa no encontrada.");
     const table = tableSnap.data() as FirebaseTable;
     const players = await readPlayersInTx(tx, tableId, playerIds);
     const leader = players.find(({ id }) => id === leaderUid)?.data;
@@ -339,12 +339,12 @@ export const finishTableTx = async (tableId: string, leaderUid: string): Promise
   const playerIds = await listPlayerIds(tableId);
   await runTransaction(getFirebaseDb(), async (tx) => {
     const tableSnap = await tx.get(tableRef(tableId));
-    if (!tableSnap.exists()) throw new Error("Table not found.");
+    if (!tableSnap.exists()) throw new Error("Mesa no encontrada.");
     const table = tableSnap.data() as FirebaseTable;
     const players = await readPlayersInTx(tx, tableId, playerIds);
     const leader = players.find(({ id }) => id === leaderUid)?.data;
     assertLeader(leader, leaderUid);
-    if (table.status === "finished") throw new Error("Table is already finished.");
+    if (table.status === "finished") throw new Error("La mesa ya está finalizada.");
 
     tx.update(tableRef(tableId), {
       status: "finished",
@@ -389,14 +389,14 @@ export const setPlayerSittingOutTx = async (tableId: string, leaderUid: string, 
   const playerIds = await listPlayerIds(tableId);
   await runTransaction(getFirebaseDb(), async (tx) => {
     const tableSnap = await tx.get(tableRef(tableId));
-    if (!tableSnap.exists()) throw new Error("Table not found.");
+    if (!tableSnap.exists()) throw new Error("Mesa no encontrada.");
     const table = tableSnap.data() as FirebaseTable;
     const players = await readPlayersInTx(tx, tableId, playerIds);
     const leader = players.find(({ id }) => id === leaderUid)?.data;
     const target = players.find(({ id }) => id === playerId);
     assertLeader(leader, leaderUid);
-    if (!target) throw new Error("Player not found.");
-    if (target.data.status === "allIn") throw new Error("All-in players cannot be marked sitting out mid-hand.");
+    if (!target) throw new Error("Jugador no encontrado.");
+    if (target.data.status === "allIn") throw new Error("Los jugadores all-in no pueden marcarse como ausentes en medio de una mano.");
 
     tx.update(target.ref, {
       status: "sittingOut",
@@ -410,14 +410,14 @@ export const reactivatePlayerTx = async (tableId: string, leaderUid: string, pla
   const playerIds = await listPlayerIds(tableId);
   await runTransaction(getFirebaseDb(), async (tx) => {
     const tableSnap = await tx.get(tableRef(tableId));
-    if (!tableSnap.exists()) throw new Error("Table not found.");
+    if (!tableSnap.exists()) throw new Error("Mesa no encontrada.");
     const table = tableSnap.data() as FirebaseTable;
     const players = await readPlayersInTx(tx, tableId, playerIds);
     const leader = players.find(({ id }) => id === leaderUid)?.data;
     const target = players.find(({ id }) => id === playerId);
     assertLeader(leader, leaderUid);
-    if (!target) throw new Error("Player not found.");
-    if (target.data.stack <= 0) throw new Error("Broke players must reload before reactivating.");
+    if (!target) throw new Error("Jugador no encontrado.");
+    if (target.data.stack <= 0) throw new Error("Los jugadores sin fichas deben recargar antes de reactivarse.");
 
     tx.update(target.ref, {
       status: table.status === "inHand" ? "waitingNextHand" : "active",
@@ -432,14 +432,14 @@ export const approveWaitingPlayerTx = async (tableId: string, leaderUid: string,
   const playerIds = await listPlayerIds(tableId);
   await runTransaction(getFirebaseDb(), async (tx) => {
     const tableSnap = await tx.get(tableRef(tableId));
-    if (!tableSnap.exists()) throw new Error("Table not found.");
+    if (!tableSnap.exists()) throw new Error("Mesa no encontrada.");
     const table = tableSnap.data() as FirebaseTable;
     const players = await readPlayersInTx(tx, tableId, playerIds);
     const leader = players.find(({ id }) => id === leaderUid)?.data;
     const target = players.find(({ id }) => id === playerId);
     assertLeader(leader, leaderUid);
-    if (!target) throw new Error("Player not found.");
-    if (target.data.stack <= 0) throw new Error("Player needs chips before being approved.");
+    if (!target) throw new Error("Jugador no encontrado.");
+    if (target.data.stack <= 0) throw new Error("El jugador necesita fichas antes de ser aprobado.");
 
     tx.update(target.ref, {
       status: table.status === "inHand" ? "waitingNextHand" : "active",
@@ -453,14 +453,14 @@ export const softRemovePlayerTx = async (tableId: string, leaderUid: string, pla
   const playerIds = await listPlayerIds(tableId);
   await runTransaction(getFirebaseDb(), async (tx) => {
     const tableSnap = await tx.get(tableRef(tableId));
-    if (!tableSnap.exists()) throw new Error("Table not found.");
+    if (!tableSnap.exists()) throw new Error("Mesa no encontrada.");
     const table = tableSnap.data() as FirebaseTable;
     const players = await readPlayersInTx(tx, tableId, playerIds);
     const leader = players.find(({ id }) => id === leaderUid)?.data;
     const target = players.find(({ id }) => id === playerId);
     assertLeader(leader, leaderUid);
-    if (!target) throw new Error("Player not found.");
-    if (target.data.isLeader) throw new Error("The leader cannot be removed from the table.");
+    if (!target) throw new Error("Jugador no encontrado.");
+    if (target.data.isLeader) throw new Error("El líder no puede ser eliminado de la mesa.");
 
     if (target.data.seatNumber !== null) {
       tx.delete(seatLockRef(tableId, target.data.seatNumber));
@@ -479,18 +479,18 @@ export const movePlayerSeatTx = async (tableId: string, leaderUid: string, playe
   const playerIds = await listPlayerIds(tableId);
   await runTransaction(getFirebaseDb(), async (tx) => {
     const tableSnap = await tx.get(tableRef(tableId));
-    if (!tableSnap.exists()) throw new Error("Table not found.");
+    if (!tableSnap.exists()) throw new Error("Mesa no encontrada.");
     const table = tableSnap.data() as FirebaseTable;
     const players = await readPlayersInTx(tx, tableId, playerIds);
     const leader = players.find(({ id }) => id === leaderUid)?.data;
     const target = players.find(({ id }) => id === playerId);
     assertLeader(leader, leaderUid);
-    if (!target) throw new Error("Player not found.");
-    if (seatNumber < 1 || seatNumber > table.maxPlayers) throw new Error("Seat is outside table capacity.");
+    if (!target) throw new Error("Jugador no encontrado.");
+    if (seatNumber < 1 || seatNumber > table.maxPlayers) throw new Error("El asiento está fuera de la capacidad de la mesa.");
 
     const seatSnap = await tx.get(seatLockRef(tableId, seatNumber));
     const seatData = seatSnap.exists() ? (seatSnap.data() as { playerId?: string }) : null;
-    if (seatData && seatData.playerId !== playerId) throw new Error("Seat is already occupied.");
+    if (seatData && seatData.playerId !== playerId) throw new Error("El asiento ya está ocupado.");
 
     if (target.data.seatNumber !== null && target.data.seatNumber !== seatNumber) {
       tx.delete(seatLockRef(tableId, target.data.seatNumber));
@@ -508,15 +508,15 @@ export const nextBettingRoundTx = async (tableId: string, leaderUid: string): Pr
   const playerIds = await listPlayerIds(tableId);
   await runTransaction(getFirebaseDb(), async (tx) => {
     const tableSnap = await tx.get(tableRef(tableId));
-    if (!tableSnap.exists()) throw new Error("Table not found.");
+    if (!tableSnap.exists()) throw new Error("Mesa no encontrada.");
     const table = tableSnap.data() as FirebaseTable;
     const players = await readPlayersInTx(tx, tableId, playerIds);
     const leader = players.find(({ id }) => id === leaderUid)?.data;
     assertLeader(leader, leaderUid);
-    if (table.status !== "inHand") throw new Error("No hand is in progress.");
-    if (!isBettingClosed(players, table.highestBet)) throw new Error("Betting round is not complete.");
+    if (table.status !== "inHand") throw new Error("No hay ninguna mano en curso.");
+    if (!isBettingClosed(players, table.highestBet)) throw new Error("La ronda de apuestas no terminó.");
     const round = nextRound(table.currentRound);
-    if (round === "showdown") throw new Error("Use End hand to move to showdown.");
+    if (round === "showdown") throw new Error("Usá 'Terminar mano' para pasar al showdown.");
 
     for (const player of players) {
       tx.update(player.ref, { currentBet: 0 });
@@ -536,16 +536,16 @@ export const endHandTx = async (tableId: string, leaderUid: string): Promise<voi
   const potIds = await listPotIds(tableId);
   await runTransaction(getFirebaseDb(), async (tx) => {
     const tableSnap = await tx.get(tableRef(tableId));
-    if (!tableSnap.exists()) throw new Error("Table not found.");
+    if (!tableSnap.exists()) throw new Error("Mesa no encontrada.");
     const table = tableSnap.data() as FirebaseTable;
     const players = await readPlayersInTx(tx, tableId, playerIds);
     const existingPots = await readPotsInTx(tx, tableId, potIds);
     const leader = players.find(({ id }) => id === leaderUid)?.data;
     assertLeader(leader, leaderUid);
-    if (table.status !== "inHand") throw new Error("No hand is in progress.");
-    if (!isBettingClosed(players, table.highestBet)) throw new Error("Betting round is not complete.");
+    if (table.status !== "inHand") throw new Error("No hay ninguna mano en curso.");
+    if (!isBettingClosed(players, table.highestBet)) throw new Error("La ronda de apuestas no terminó.");
     if (existingPots.some((pot) => !pot.data.distributed && pot.data.handNumber === table.handNumber)) {
-      throw new Error("Current hand pots already exist.");
+      throw new Error("Ya existen pozos para la mano actual.");
     }
 
     const pots = calculatePots(players.map(enginePlayerFromDoc));

@@ -9,7 +9,7 @@ type ToastViewportProps = {
 
 export function ToastViewport({ toasts, onDismiss }: ToastViewportProps) {
   return (
-    <div className="toast-viewport" aria-live="polite" aria-label="Notifications">
+    <div className="toast-viewport" aria-live="polite" aria-label="Notificaciones">
       {toasts.map((toast) => (
         <button key={toast.id} type="button" className={`toast-message ${toast.tone ?? "info"}`} onClick={() => onDismiss(toast.id)}>
           {toast.text}

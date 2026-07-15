@@ -3,18 +3,18 @@ import { normalizeBrokePlayers } from "./players";
 
 const assertPositive = (amount: number, label: string): void => {
   if (!Number.isFinite(amount) || amount <= 0) {
-    throw new Error(`${label} must be positive.`);
+    throw new Error(`${label} debe ser positivo.`);
   }
 };
 
 export const amountToCall = (table: Table, playerId: string): number => {
   const player = table.players.find((candidate) => candidate.id === playerId);
-  if (!player) throw new Error("Player not found.");
+  if (!player) throw new Error("Jugador no encontrado.");
   return Math.max(0, table.currentBet - player.currentBet);
 };
 
 const commitChips = (player: Player, amount: number): Player => {
-  if (amount < 0) throw new Error("Cannot commit a negative amount.");
+  if (amount < 0) throw new Error("No se puede comprometer un monto negativo.");
   const committed = Math.min(amount, player.stack);
   const nextStack = player.stack - committed;
   return {
@@ -41,8 +41,8 @@ export const postBlind = (table: Table, playerId: string, amount: number): Table
 
 export const applyAction = (table: Table, action: Action): Table => {
   const actingPlayer = table.players.find((player) => player.id === action.playerId);
-  if (!actingPlayer) throw new Error("Player not found.");
-  if (actingPlayer.status !== "active") throw new Error("Only active players can act.");
+  if (!actingPlayer) throw new Error("Jugador no encontrado.");
+  if (actingPlayer.status !== "active") throw new Error("Solo los jugadores activos pueden actuar.");
 
   const toCall = amountToCall(table, action.playerId);
   let nextCurrentBet = table.currentBet;
@@ -52,7 +52,7 @@ export const applyAction = (table: Table, action: Action): Table => {
 
     switch (action.type) {
       case "check":
-        if (toCall > 0) throw new Error("Player cannot check while facing a bet.");
+        if (toCall > 0) throw new Error("El jugador no puede pasar si hay una apuesta que igualar.");
         return player;
       case "call":
         return commitChips(player, toCall);
@@ -60,7 +60,7 @@ export const applyAction = (table: Table, action: Action): Table => {
         assertPositive(action.amount, "Raise");
         const updated = commitChips(player, toCall + action.amount);
         if (updated.currentBet <= table.currentBet && updated.status !== "allIn") {
-          throw new Error("Raise must increase the current bet.");
+          throw new Error("La suba debe incrementar la apuesta actual.");
         }
         nextCurrentBet = Math.max(nextCurrentBet, updated.currentBet);
         return updated;

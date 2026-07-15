@@ -25,7 +25,7 @@ export function PlayerSeat({ player, index, total, dealerSeat, smallBlindSeat, b
     .join(" ");
 
   return (
-    <article className={classes} style={{ "--angle": angle } as CSSProperties} aria-label={`${player.name} seat ${player.seatNumber}`}>
+    <article className={classes} style={{ "--angle": angle } as CSSProperties} aria-label={`${player.name}, asiento ${player.seatNumber}`}>
       <div className="seat-badges">
         {player.seatNumber === dealerSeat ? <span className="badge dealer">D</span> : null}
         {player.seatNumber === smallBlindSeat ? <span className="badge sb">SB</span> : null}
@@ -33,7 +33,7 @@ export function PlayerSeat({ player, index, total, dealerSeat, smallBlindSeat, b
       </div>
       <div className="seat-name">{player.name}</div>
       <div className="seat-money">${player.stack}</div>
-      <div className="seat-bet">Bet ${player.currentBet}</div>
+      <div className="seat-bet">Apuesta ${player.currentBet}</div>
     </article>
   );
 }

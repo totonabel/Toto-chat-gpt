@@ -46,9 +46,14 @@ export function PlayerManager({ tableId, leaderUid, table, players }: PlayerMana
   };
 
   const moveSeat = (player: PlayerWithId) => {
-    const value = window.prompt(`Mover a ${player.name} al asiento`, String(player.seatNumber ?? 1));
+    const value = window.prompt(`Mover a ${player.name} al asiento (1-${table.maxPlayers})`, String(player.seatNumber ?? 1));
     if (!value) return;
-    void run(`mover-${player.id}`, () => movePlayerSeatTx(tableId, leaderUid, player.id, Number(value)));
+    const seatNumber = Number(value);
+    if (!Number.isInteger(seatNumber) || seatNumber < 1 || seatNumber > table.maxPlayers) {
+      setError(`Ingresá un número de asiento entre 1 y ${table.maxPlayers}.`);
+      return;
+    }
+    void run(`mover-${player.id}`, () => movePlayerSeatTx(tableId, leaderUid, player.id, seatNumber));
   };
 
   return (

@@ -20,6 +20,7 @@ type ActionBarProps = {
 export function ActionBar({ tableId, uid, table, players, myPlayer, pots, preparedRaise, onClearPreparedRaise, onToast }: ActionBarProps) {
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [confirmingFold, setConfirmingFold] = useState(false);
 
   const amountToCall = Math.max(0, (table?.highestBet ?? 0) - (myPlayer?.currentBet ?? 0));
   const isMyTurn = Boolean(myPlayer?.seatNumber !== null && myPlayer?.seatNumber === table?.currentTurnSeat);
@@ -37,14 +38,14 @@ export function ActionBar({ tableId, uid, table, players, myPlayer, pots, prepar
     if (pendingAction) return;
     setPendingAction(label);
     setError(null);
-    onToast?.(`Sending ${label}...`, "info");
+    onToast?.(`Enviando ${label}...`, "info");
     navigator.vibrate?.(18);
     try {
       await action();
       if (clearRaise) onClearPreparedRaise();
-      onToast?.(successMessage ?? `${label} sent`, "success");
+      onToast?.(successMessage ?? `${label} enviado`, "success");
     } catch (actionError) {
-      const message = actionError instanceof Error ? actionError.message : "Action failed.";
+      const message = actionError instanceof Error ? actionError.message : "La acción falló.";
       setError(message);
       onToast?.(message, "error");
     } finally {
@@ -52,37 +53,47 @@ export function ActionBar({ tableId, uid, table, players, myPlayer, pots, prepar
     }
   };
 
+  const confirmFold = () => {
+    setConfirmingFold(false);
+    void run("fold", () => foldTx(tableId, uid), true, "Te retiraste");
+  };
+
   return (
-    <section aria-label="Player actions">
+    <section aria-label="Acciones del jugador">
       {error ? <div className="error-card">{error}</div> : null}
+      {confirmingFold ? (
+        <div className="fold-confirm-card" role="alertdialog" aria-label="Confirmar retiro">
+          <span>¿Retirarte de esta mano?</span>
+          <div className="fold-confirm-actions">
+            <button type="button" className="secondary-button" onClick={() => setConfirmingFold(false)}>Cancelar</button>
+            <button type="button" className="danger-button" onClick={confirmFold}>Retirarme</button>
+          </div>
+        </div>
+      ) : null}
       <div className="action-bar">
-        <button className="action-button" type="button" disabled={!canCheck} onClick={() => run("check", () => checkTx(tableId, uid), false, "You checked")}>
-          Check
+        <button className="action-button" type="button" disabled={!canCheck} onClick={() => run("check", () => checkTx(tableId, uid), false, "Pasaste")}>
+          Pasar
         </button>
-        <button className="action-button primary" type="button" disabled={!canCall} onClick={() => run("call", () => callTx(tableId, uid), false, `You called $${amountToCall}`)}>
-          Call ${amountToCall}
+        <button className="action-button primary" type="button" disabled={!canCall} onClick={() => run("call", () => callTx(tableId, uid), false, `Igualaste $${amountToCall}`)}>
+          Igualar ${amountToCall}
         </button>
-        <button className="action-button primary" type="button" disabled={!canRaise} onClick={() => run("raise", () => raiseTx(tableId, uid, preparedRaise), true, `You raised $${preparedRaise}`)}>
-          Raise ${preparedRaise}
+        <button className="action-button primary" type="button" disabled={!canRaise} onClick={() => run("raise", () => raiseTx(tableId, uid, preparedRaise), true, `Subiste $${preparedRaise}`)}>
+          Subir ${preparedRaise}
         </button>
-        <button className="action-button" type="button" disabled={disabled} onClick={() => run("all-in", () => allInTx(tableId, uid), true, "You are all-in")}>
+        <button className="action-button" type="button" disabled={disabled} onClick={() => run("all-in", () => allInTx(tableId, uid), true, "Estás all-in")}>
           All In
         </button>
         <button
           className="action-button danger"
           type="button"
           disabled={disabled}
-          onClick={() => {
-            if (window.confirm("Fold this hand?")) {
-              void run("fold", () => foldTx(tableId, uid), true, "You folded");
-            }
-          }}
+          onClick={() => setConfirmingFold(true)}
         >
-          Fold
+          Retirarse
         </button>
       </div>
       <p className="muted" style={{ textAlign: "center", fontSize: "0.78rem" }}>
-        {pendingAction ? `Sending ${pendingAction}...` : `Live pot $${livePotTotal} · ${currentPlayer ? `Turn: ${currentPlayer.name}` : "No player waiting"}`}
+        {pendingAction ? `Enviando ${pendingAction}...` : `Pozo en vivo $${livePotTotal} · ${currentPlayer ? `Turno: ${currentPlayer.name}` : "Nadie esperando"}`}
       </p>
     </section>
   );

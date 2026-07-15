@@ -207,6 +207,26 @@ button:disabled {
   padding: 12px 14px;
 }
 
+.fold-confirm-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  border: 1px solid rgba(255, 107, 107, 0.35);
+  border-radius: 16px;
+  background: rgba(255, 107, 107, 0.12);
+  color: #ffd7d7;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  font-weight: 800;
+}
+
+.fold-confirm-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .player-page {
   display: grid;
   grid-template-rows: auto 1fr auto;
@@ -689,8 +709,17 @@ button:disabled {
 
 .leader-actions-grid.compact button {
   min-height: 42px;
-  padding: 8px;
-  font-size: 0.76rem;
+  padding: 8px 4px;
+  font-size: 0.72rem;
+  line-height: 1.15;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 420px) {
+  .leader-actions-grid.compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .leader-player-list,
@@ -939,9 +968,17 @@ button:disabled {
 }
 
 .player-header.compact .status-pill {
+  grid-column: span 3;
   border-radius: 14px;
   padding: 8px 10px;
   font-size: 0.86rem;
+}
+
+.player-header.compact .leave-table-button {
+  grid-column: span 1;
+  min-width: 0;
+  padding: 8px 6px;
+  font-size: 0.7rem;
 }
 
 .table-stage.compact {

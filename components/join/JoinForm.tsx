@@ -41,7 +41,7 @@ export function JoinForm() {
       const result = await getTableByCode(code.trim());
       if (!result) {
         setFoundTable(null);
-        setError("No table found with that code.");
+        setError("No se encontró ninguna mesa con ese código.");
         return;
       }
       const players = await listPlayersOnce(result.id);
@@ -50,7 +50,7 @@ export function JoinForm() {
         occupiedSeats: players.map(({ data }) => data.seatNumber).filter((seat): seat is number => seat !== null),
       });
     } catch (lookupError) {
-      setError(lookupError instanceof Error ? lookupError.message : "Could not find table.");
+      setError(lookupError instanceof Error ? lookupError.message : "No se pudo encontrar la mesa.");
     } finally {
       setLoading(false);
     }
@@ -66,12 +66,12 @@ export function JoinForm() {
       await joinTable(foundTable.id, user.uid, name.trim());
       await sitAtSeat(foundTable.id, user.uid, selectedSeat);
       persistSession({ tableId: foundTable.id, playerId: user.uid, name: name.trim(), seatNumber: selectedSeat, isLeader: false });
-      pushToast("Seat saved. Entering table...", "success");
+      pushToast("Asiento guardado. Entrando a la mesa...", "success");
       router.push(`/table/${foundTable.id}/player`);
     } catch (joinError) {
-      const message = joinError instanceof Error ? joinError.message : "Could not join table.";
+      const message = joinError instanceof Error ? joinError.message : "No se pudo unir a la mesa.";
       setError(message);
-      pushToast(message.includes("Seat") ? "Seat taken" : message, "error");
+      pushToast(message.includes("Seat") ? "Asiento ocupado" : message, "error");
     } finally {
       setLoading(false);
     }
@@ -80,14 +80,14 @@ export function JoinForm() {
   return (
     <form className="join-card" onSubmit={submit}>
       <div>
-        <p className="eyebrow">Join table</p>
-        <h2>Take a seat</h2>
-        <p className="muted">Enter the room code, pick your name, and choose an open seat.</p>
+        <p className="eyebrow">Unirse a la mesa</p>
+        <h2>Tomá asiento</h2>
+        <p className="muted">Ingresá el código de la sala, elegí tu nombre y un asiento libre.</p>
       </div>
 
       <div className="form-grid">
         <div className="field">
-          <label htmlFor="table-code">Table code</label>
+          <label htmlFor="table-code">Código de mesa</label>
           <input
             id="table-code"
             value={code}
@@ -98,11 +98,11 @@ export function JoinForm() {
           />
         </div>
         <button type="button" className="secondary-button" onClick={findTable} disabled={!canSearch || authLoading}>
-          {loading ? "Searching..." : "Find table"}
+          {loading ? "Buscando..." : "Buscar mesa"}
         </button>
 
         <div className="field">
-          <label htmlFor="player-name">Your name</label>
+          <label htmlFor="player-name">Tu nombre</label>
           <input id="player-name" value={name} onChange={(event: { target: { value: string } }) => setName(event.target.value)} placeholder="Daniel" autoComplete="name" />
         </div>
       </div>
@@ -112,7 +112,7 @@ export function JoinForm() {
           <div className="player-panel" style={{ padding: 14 }}>
             <strong>{foundTable.data.name}</strong>
             <p className="muted">
-              Blinds ${foundTable.data.smallBlind}/${foundTable.data.bigBlind} · Stack ${foundTable.data.startingStack}
+              Ciegas ${foundTable.data.smallBlind}/${foundTable.data.bigBlind} · Fichas iniciales ${foundTable.data.startingStack}
             </p>
           </div>
           <SeatSelector
@@ -127,7 +127,7 @@ export function JoinForm() {
       {error || authError ? <div className="error-card">{error ?? authError?.message}</div> : null}
 
       <button type="submit" className="primary-button" disabled={!canJoin}>
-        {loading ? "Joining..." : "Enter table"}
+        {loading ? "Uniéndote..." : "Entrar a la mesa"}
       </button>
       <ToastViewport toasts={toasts} onDismiss={dismissToast} />
     </form>

@@ -12,7 +12,7 @@ export function SeatSelector({ maxPlayers, occupiedSeats, selectedSeat, onSelect
 
   return (
     <section className="field">
-      <label>Choose your seat</label>
+      <label>Elegí tu asiento</label>
       <div className="seat-grid">
         {seats.map((seat) => {
           const occupied = occupiedSeats.includes(seat);
@@ -24,7 +24,7 @@ export function SeatSelector({ maxPlayers, occupiedSeats, selectedSeat, onSelect
               disabled={occupied}
               onClick={() => onSelect(seat)}
             >
-              {occupied ? "Taken" : `Seat ${seat}`}
+              {occupied ? "Ocupado" : `Asiento ${seat}`}
             </button>
           );
         })}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { FirebaseErrorState } from "../../../../components/feedback/FirebaseErrorState";
 import { useParams, useRouter } from "next/navigation";
 import { ConnectionBanner } from "../../../../components/feedback/ConnectionBanner";
@@ -28,6 +28,7 @@ export default function LeaderPage() {
   const { pots } = usePots(tableId);
   const { player: myPlayer, loading: myPlayerLoading } = useMyPlayer(tableId, user?.uid ?? null);
   const online = useOnlineStatus();
+  const wasOnlineRef = useRef(online);
   const { persistSession } = useLocalSession();
   const { toasts, pushToast, dismissToast } = useToasts();
 
@@ -43,6 +44,8 @@ export default function LeaderPage() {
   }, [online, tableId, user]);
 
   useEffect(() => {
+    if (wasOnlineRef.current === online) return;
+    wasOnlineRef.current = online;
     pushToast(online ? "Reconectado" : "Conexión perdida", online ? "success" : "error");
   }, [online, pushToast]);
 

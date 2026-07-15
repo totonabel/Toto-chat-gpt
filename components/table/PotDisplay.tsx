@@ -5,7 +5,7 @@ type PotDisplayProps = {
 export function PotDisplay({ amount }: PotDisplayProps) {
   return (
     <div className="pot-display">
-      <span>Total pot</span>
+      <span>Pozo total</span>
       <strong>${amount}</strong>
     </div>
   );

@@ -14,7 +14,7 @@ export const activePlayersWithChips = (players: Player[]): Player[] =>
 export const normalizeBrokePlayers = (players: Player[]): Player[] =>
   players.map((player) => {
     if (player.stack < 0 || player.currentBet < 0 || player.totalCommitted < 0) {
-      throw new Error("Stacks, bets and commitments cannot be negative.");
+      throw new Error("Las fichas, apuestas y montos comprometidos no pueden ser negativos.");
     }
 
     if (player.stack === 0 && player.status !== "allIn" && player.status !== "folded") {
@@ -37,7 +37,7 @@ export const rotateDealer = (table: Table): Table => {
   const nextDealer = nextEligiblePlayer(players, table.dealerSeat);
 
   if (!nextDealer) {
-    throw new Error("Cannot rotate dealer without eligible players.");
+    throw new Error("No se puede rotar el dealer sin jugadores elegibles.");
   }
 
   return { ...table, players, dealerSeat: nextDealer.seat };
@@ -45,13 +45,13 @@ export const rotateDealer = (table: Table): Table => {
 
 export const addPlayer = (table: Table, player: Omit<Player, "status" | "currentBet" | "totalCommitted">): Table => {
   if (table.players.some((existing) => existing.id === player.id)) {
-    throw new Error("Player id already exists at this table.");
+    throw new Error("El ID de jugador ya existe en esta mesa.");
   }
   if (table.players.some((existing) => existing.seat === player.seat)) {
-    throw new Error("Seat is already occupied.");
+    throw new Error("El asiento ya está ocupado.");
   }
   if (player.stack < 0) {
-    throw new Error("Stack cannot be negative.");
+    throw new Error("Las fichas no pueden ser negativas.");
   }
 
   const status = table.handInProgress ? "waitingNextHand" : player.stack === 0 ? "broke" : "active";
@@ -63,7 +63,7 @@ export const addPlayer = (table: Table, player: Omit<Player, "status" | "current
 
 export const rebuyPlayer = (table: Table, playerId: string, amount: number): Table => {
   if (amount <= 0) {
-    throw new Error("Rebuy amount must be positive.");
+    throw new Error("El monto de recompra debe ser positivo.");
   }
 
   return {

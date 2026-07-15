@@ -1,15 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FirebaseErrorState } from "../../../../components/feedback/FirebaseErrorState";
 import { useParams, useRouter } from "next/navigation";
 import { ConnectionBanner } from "../../../../components/feedback/ConnectionBanner";
 import { ToastViewport } from "../../../../components/feedback/ToastViewport";
 import { DebugPanel } from "../../../../components/debug/DebugPanel";
-import { ActionBar } from "../../../../components/actions/ActionBar";
-import { ChipSelector } from "../../../../components/chips/ChipSelector";
-import { PreparedRaise } from "../../../../components/chips/PreparedRaise";
-import { PokerTable } from "../../../../components/table/PokerTable";
+import { PlayerGameView } from "../../../../components/table/PlayerGameView";
 import { PostGameView } from "../../../../components/table/PostGameView";
 import { updatePlayerConnection } from "../../../../lib/firebase/player";
 import { useAuth } from "../../../../lib/hooks/useAuth";
@@ -21,8 +18,6 @@ import { useLocalSession } from "../../../../lib/hooks/useLocalSession";
 import { useOnlineStatus } from "../../../../lib/hooks/useOnlineStatus";
 import { useToasts } from "../../../../lib/hooks/useToasts";
 import { clearLocalSession } from "../../../../lib/session/localSession";
-
-const formatMoney = (amount: number) => `$${amount}`;
 
 export default function PlayerTablePage() {
   const params = useParams<{ tableId: string }>();
@@ -36,6 +31,7 @@ export default function PlayerTablePage() {
   const [wasMyTurn, setWasMyTurn] = useState(false);
   const [lastStatus, setLastStatus] = useState<string | null>(null);
   const online = useOnlineStatus();
+  const wasOnlineRef = useRef(online);
   const { persistSession } = useLocalSession();
   const { toasts, pushToast, dismissToast } = useToasts();
   const router = useRouter();
@@ -50,16 +46,16 @@ export default function PlayerTablePage() {
   const isMyTurn = Boolean(myPlayer?.seatNumber !== null && myPlayer?.seatNumber === table?.currentTurnSeat);
 
   const statusText = useMemo(() => {
-    if (table?.status === "finished") return "Table finished";
-    if (!myPlayer) return "Joining table...";
-    if (myPlayer.status === "allIn") return "You are all-in";
-    if (myPlayer.status === "folded") return "You folded";
-    if (myPlayer.status === "broke") return "You are broke";
-    if (myPlayer.status === "waitingNextHand") return "Waiting next hand";
-    if (!myPlayer.connected) return "Reconnecting...";
-    if (isMyTurn) return "Your turn";
-    if (currentTurnPlayer) return `Waiting for ${currentTurnPlayer.name}`;
-    return table?.status === "waiting" ? "Waiting for next hand" : "Waiting for table update";
+    if (table?.status === "finished") return "Mesa finalizada";
+    if (!myPlayer) return "Uniéndote a la mesa...";
+    if (myPlayer.status === "allIn") return "Estás all-in";
+    if (myPlayer.status === "folded") return "Te retiraste";
+    if (myPlayer.status === "broke") return "Te quedaste sin fichas";
+    if (myPlayer.status === "waitingNextHand") return "Esperando la próxima mano";
+    if (!myPlayer.connected) return "Reconectando...";
+    if (isMyTurn) return "Tu turno";
+    if (currentTurnPlayer) return `Esperando a ${currentTurnPlayer.name}`;
+    return table?.status === "waiting" ? "Esperando la próxima mano" : "Esperando actualización de la mesa";
   }, [currentTurnPlayer, isMyTurn, myPlayer, table?.status]);
 
   const chipDisabled = !isMyTurn || !myPlayer || table?.status === "finished" || ["folded", "allIn", "broke", "waitingNextHand"].includes(myPlayer.status);
@@ -85,30 +81,32 @@ export default function PlayerTablePage() {
       setWasMyTurn(isMyTurn);
       return;
     }
-    pushToast("Your turn", "success");
+    pushToast("Tu turno", "success");
     navigator.vibrate?.(35);
     setWasMyTurn(true);
   }, [isMyTurn, pushToast, wasMyTurn]);
 
   useEffect(() => {
     if (!myPlayer || lastStatus === myPlayer.status) return;
-    if (myPlayer.status === "waitingNextHand") pushToast("Waiting next hand", "warning");
-    if (myPlayer.status === "allIn") pushToast("You are all-in", "success");
-    if (myPlayer.status === "folded") pushToast("You folded", "warning");
-    if (myPlayer.status === "broke") pushToast("You are broke", "error");
+    if (myPlayer.status === "waitingNextHand") pushToast("Esperando la próxima mano", "warning");
+    if (myPlayer.status === "allIn") pushToast("Estás all-in", "success");
+    if (myPlayer.status === "folded") pushToast("Te retiraste", "warning");
+    if (myPlayer.status === "broke") pushToast("Te quedaste sin fichas", "error");
     setLastStatus(myPlayer.status);
   }, [lastStatus, myPlayer, pushToast]);
 
   useEffect(() => {
-    pushToast(online ? "Reconnected" : "Connection lost", online ? "success" : "error");
+    if (wasOnlineRef.current === online) return;
+    wasOnlineRef.current = online;
+    pushToast(online ? "Reconectado" : "Conexión perdida", online ? "success" : "error");
   }, [online, pushToast]);
 
   if (authLoading || tableLoading || playersLoading || myPlayerLoading) {
-    return <main className="loading-state">Loading your table...</main>;
+    return <main className="loading-state">Cargando tu mesa...</main>;
   }
 
   if (authError || !table || !user) {
-    return <FirebaseErrorState title="Could not load table" message={authError?.message ?? tableError?.message ?? "Check your Firebase configuration or network connection."} />;
+    return <FirebaseErrorState title="No se pudo cargar la mesa" message={authError?.message ?? tableError?.message ?? "Revisá la configuración de Firebase o la conexión."} />;
   }
 
   if (table.status === "finished") {
@@ -129,36 +127,7 @@ export default function PlayerTablePage() {
   return (
     <main className={`player-page ${isMyTurn ? "my-turn" : ""}`}>
       <ConnectionBanner online={online} snapshotError={tableError} />
-      <header className="player-header" aria-label="Player status">
-        <div className="stat-card">
-          <span className="muted">Pot total</span>
-          <strong>{formatMoney(potTotal)}</strong>
-        </div>
-        <div className="stat-card">
-          <span className="muted">My stack</span>
-          <strong>{formatMoney(myPlayer?.stack ?? 0)}</strong>
-        </div>
-        <div className="stat-card">
-          <span className="muted">Amount to call</span>
-          <strong>{formatMoney(amountToCall)}</strong>
-        </div>
-        <div className="stat-card">
-          <span className="muted">Highest bet</span>
-          <strong>{formatMoney(table.highestBet)}</strong>
-        </div>
-        <div>
-          <button type="button" className="secondary-button leave-table-button" onClick={leaveTable}>Salir de la mesa</button>
-        </div>
-        <div className="status-pill">{statusText}</div>
-      </header>
-
-      <section className="table-stage">
-        <PokerTable table={table} players={players} potTotal={potTotal} />
-        <ChipSelector disabled={chipDisabled} onAdd={(value) => setPreparedRaise((amount) => amount + value)} values={table.chipValues.length ? table.chipValues : undefined} />
-        <PreparedRaise amount={preparedRaise} onClear={() => setPreparedRaise(0)} />
-      </section>
-
-      <ActionBar
+      <PlayerGameView
         tableId={tableId}
         uid={user.uid}
         table={table}
@@ -166,8 +135,15 @@ export default function PlayerTablePage() {
         myPlayer={myPlayer}
         pots={pots}
         preparedRaise={preparedRaise}
+        statusText={statusText}
+        potTotal={potTotal}
+        amountToCall={amountToCall}
+        isMyTurn={isMyTurn}
+        chipDisabled={chipDisabled}
+        onAddChip={(value) => setPreparedRaise((amount) => amount + value)}
         onClearPreparedRaise={() => setPreparedRaise(0)}
         onToast={pushToast}
+        onLeaveTable={leaveTable}
       />
       <DebugPanel table={table} players={players} pots={pots} snapshotLabel="player" />
       <ToastViewport toasts={toasts} onDismiss={dismissToast} />

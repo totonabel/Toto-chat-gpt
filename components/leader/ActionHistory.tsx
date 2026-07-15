@@ -13,12 +13,12 @@ export function ActionHistory({ tableId }: ActionHistoryProps) {
     <section className="leader-card">
       <div className="leader-section-title">
         <div>
-          <p className="eyebrow">History</p>
-          <h2>Action log</h2>
+          <p className="eyebrow">Historial</p>
+          <h2>Registro de acciones</h2>
         </div>
-        <span className="status-chip">live</span>
+        <span className="status-chip">en vivo</span>
       </div>
-      {loading ? <p className="muted">Loading actions...</p> : null}
+      {loading ? <p className="muted">Cargando acciones...</p> : null}
       {error ? <div className="error-card">{error.message}</div> : null}
       <div className="action-history-list">
         {actions.map((action) => (
@@ -26,7 +26,7 @@ export function ActionHistory({ tableId }: ActionHistoryProps) {
             <div>
               <strong>{action.type}</strong>
               <p className="muted">
-                {action.playerName} · hand {action.handNumber} · {action.round}
+                {action.playerName} · mano {action.handNumber} · {action.round}
               </p>
             </div>
             {action.amount !== null ? <span className="status-chip">${action.amount}</span> : null}
