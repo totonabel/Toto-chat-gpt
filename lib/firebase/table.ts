@@ -60,7 +60,7 @@ export const getTableByCode = async (code: string): Promise<{ id: string; data: 
 export const joinTable = async (tableId: string, uid: string, name: string): Promise<void> => {
   await runTransaction(getFirebaseDb(), async (tx) => {
     const tableSnap = await tx.get(tableRef(tableId));
-    if (!tableSnap.exists()) throw new Error("Table not found.");
+    if (!tableSnap.exists()) throw new Error("Mesa no encontrada.");
     const table = tableSnap.data() as FirebaseTable;
     const ref = playerRef(tableId, uid);
     const playerSnap = await tx.get(ref);

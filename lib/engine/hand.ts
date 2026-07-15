@@ -13,16 +13,16 @@ export const startHand = (table: Table): Table => {
   const eligible = activePlayersWithChips(normalizedPlayers);
 
   if (eligible.length < 2) {
-    throw new Error("Cannot start a hand with fewer than 2 active players with chips.");
+    throw new Error("No se puede iniciar una mano con menos de 2 jugadores activos con fichas.");
   }
 
   const dealer = nextEligiblePlayer(normalizedPlayers, table.dealerSeat);
-  if (!dealer) throw new Error("Cannot choose a dealer.");
+  if (!dealer) throw new Error("No se pudo elegir un dealer.");
 
   const smallBlindPlayer = eligible.length === 2 ? dealer : nextEligiblePlayer(normalizedPlayers, dealer.seat);
-  if (!smallBlindPlayer) throw new Error("Cannot assign small blind.");
+  if (!smallBlindPlayer) throw new Error("No se pudo asignar la ciega chica.");
   const bigBlindPlayer = nextEligiblePlayer(normalizedPlayers, smallBlindPlayer.seat);
-  if (!bigBlindPlayer) throw new Error("Cannot assign big blind.");
+  if (!bigBlindPlayer) throw new Error("No se pudo asignar la ciega grande.");
 
   let nextTable: Table = {
     ...table,

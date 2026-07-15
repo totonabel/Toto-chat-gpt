@@ -23,6 +23,7 @@ type PlayerGameViewProps = {
   onAddChip: (value: number) => void;
   onClearPreparedRaise: () => void;
   onToast?: (message: string, tone?: "info" | "success" | "warning" | "error") => void;
+  onLeaveTable?: () => void;
   className?: string;
 };
 
@@ -52,6 +53,7 @@ export function PlayerGameView({
   onAddChip,
   onClearPreparedRaise,
   onToast,
+  onLeaveTable,
   className = "",
 }: PlayerGameViewProps) {
   const currentTurnPlayer = players.find((player) => player.seatNumber === table.currentTurnSeat);
@@ -77,6 +79,9 @@ export function PlayerGameView({
           <small>{currentTurnPlayer ? currentTurnPlayer.name : "—"}</small>
         </div>
         <div className="status-pill">{statusText}</div>
+        {onLeaveTable ? (
+          <button type="button" className="secondary-button leave-table-button" onClick={onLeaveTable}>Salir</button>
+        ) : null}
       </header>
 
       <section className="table-stage compact">

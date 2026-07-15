@@ -3,11 +3,11 @@ import type { Player, Pot, Table } from "./types";
 const assertNonNegativeMoney = (players: Player[], pots: Pot[] = []): void => {
   for (const player of players) {
     if (player.stack < 0 || player.currentBet < 0 || player.totalCommitted < 0) {
-      throw new Error("Stacks and pots cannot be negative.");
+      throw new Error("Las fichas y los pozos no pueden ser negativos.");
     }
   }
   for (const pot of pots) {
-    if (pot.amount < 0) throw new Error("Stacks and pots cannot be negative.");
+    if (pot.amount < 0) throw new Error("Las fichas y los pozos no pueden ser negativos.");
   }
 };
 
@@ -43,7 +43,7 @@ export const distributePots = (table: Table, winnersByPotId: Record<string, stri
   const winnings = new Map<string, number>();
   for (const pot of table.pots) {
     const winners = (winnersByPotId[pot.id] ?? []).filter((winnerId) => pot.eligiblePlayerIds.includes(winnerId));
-    if (winners.length === 0) throw new Error(`Pot ${pot.id} has no eligible winners.`);
+    if (winners.length === 0) throw new Error(`El pozo ${pot.id} no tiene ganadores elegibles.`);
 
     const share = Math.floor(pot.amount / winners.length);
     let remainder = pot.amount % winners.length;

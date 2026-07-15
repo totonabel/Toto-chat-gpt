@@ -25,8 +25,8 @@ export default function TableRoleRouterPage() {
   }
 
   if (authError || (!tableLoading && !table)) {
-    return <FirebaseErrorState title="Table not found" message={authError?.message ?? tableError?.message ?? "The table may have been deleted or the code is invalid."} />;
+    return <FirebaseErrorState title="Mesa no encontrada" message={authError?.message ?? tableError?.message ?? "La mesa pudo haber sido eliminada o el código es inválido."} />;
   }
 
-  return <main className="loading-state">Restoring your table...</main>;
+  return <main className="loading-state">Restaurando tu mesa...</main>;
 }

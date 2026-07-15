@@ -9,11 +9,11 @@ export function PreparedRaise({ amount, onClear }: PreparedRaiseProps) {
   return (
     <div className="prepared-raise" aria-live="polite">
       <div>
-        <span className="muted">Prepared raise</span>
+        <span className="muted">Suba preparada</span>
         <strong>${amount}</strong>
       </div>
       <button type="button" className="secondary-button" onClick={onClear} disabled={amount === 0}>
-        Clear
+        Limpiar
       </button>
     </div>
   );

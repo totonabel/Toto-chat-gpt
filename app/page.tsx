@@ -18,25 +18,26 @@ export default function HomePage() {
     <main className="page-shell">
       <section className="hero-card">
         <p className="eyebrow">Poker Wallet</p>
-        <h1>Virtual chips for live poker nights.</h1>
+        <h1>Fichas virtuales para tus noches de póker.</h1>
         <p className="muted">
-          Create or join an in-person poker table. Cards stay physical; stacks,
-          blinds, turns, pots, all-ins and payouts are tracked in real time.
+          Creá o unite a una mesa de póker presencial. Las cartas siguen siendo
+          físicas; las fichas, ciegas, turnos, pozos, all-ins y pagos se
+          registran en tiempo real.
         </p>
 
         <div className="form-grid">
           {session ? (
             <p className="muted">
-              Restoring {session.name} at your last table...
+              Restaurando a {session.name} en tu última mesa...
             </p>
           ) : null}
 
           <a className="primary-link" href="/join">
-            Join a table
+            Unirse a una mesa
           </a>
 
           <a className="secondary-button" href="/create">
-            Create a table
+            Crear una mesa
           </a>
         </div>
       </section>

@@ -10,7 +10,7 @@ export function ConnectionBanner({ online, snapshotError }: ConnectionBannerProp
 
   return (
     <div className="connection-banner" role="status">
-      {online ? "Reconnecting to table data..." : "Connection lost. Reconnecting..."}
+      {online ? "Reconectando con los datos de la mesa..." : "Conexión perdida. Reconectando..."}
     </div>
   );
 }
